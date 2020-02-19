@@ -1,0 +1,11 @@
+
+
+url-api: https://indodax.com/api
+
+market:
+  - btc_idr
+  - ten_btc
+  - ten_idr
+  # - btc_ten , and etc
+
+delay-each-market: 0  #in seconds
