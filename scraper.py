@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+
+"""
+This file contain function for scraping market data through API.
+
+"""
+
 import db
 import yaml
 import requests

@@ -9,3 +9,6 @@ market:
   # - btc_ten , and etc
 
 delay-each-market: 0  #in seconds
+
+
+limit : 10  # database load limit each time

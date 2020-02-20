@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+
+"""
+This file contain function needed to connect with database.
+
+"""
+
 import sqlite3
 from sqlite3 import Error
 from time import ctime
