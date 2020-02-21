@@ -65,7 +65,7 @@ def convert_depth(depth_raw) :
 ### RUN THE DATA ###
 ####################
 
-load_data = db.load_data(["ticker","trades","depth"],"btc_idr",LIMIT)
+load_data = db.load_data(["ticker","trades","depth"],"btc_idr",LIMIT,"crypto.db")
 ticker_raw = []
 trades_raw = []
 depth_raw = []

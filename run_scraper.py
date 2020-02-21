@@ -6,6 +6,6 @@ import time
 iteration = 0
 while True:
 	iteration += 1
-	scraper.runScraper()
+	scraper.run_scraper("crypto.db")
 	print(f"get data ke - {iteration}")
 	time.sleep(60)

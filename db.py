@@ -10,9 +10,9 @@ from sqlite3 import Error
 from time import ctime
 import json
 
-def sql_connect():
+def sql_connect(dbname="crypto.db"):
     try:
-        con = sqlite3.connect("crypto.db")
+        con = sqlite3.connect(dbname)
         return con
     except Error:
         print(Error)
@@ -29,7 +29,7 @@ def create_table(con, market):
     # else :
     #     print('Database exist!')
 
-def write_to_db(market, data):
+def write_to_db(market, data, dbname):
     con = sql_connect()
     create_table(con, market)
     try :
@@ -52,7 +52,7 @@ def write_to_db(market, data):
 
 
 
-def load_data(cols,market,limit,order='DESC') :
+def load_data(cols,market,limit,dbname,order='DESC') :
     rows = [];
     arg_col = 'timecode'
     for col in cols :
