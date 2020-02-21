@@ -30,7 +30,7 @@ def create_table(con, market):
     #     print('Database exist!')
 
 def write_to_db(market, data, dbname):
-    con = sql_connect()
+    con = sql_connect(dbname)
     create_table(con, market)
     try :
         crs = con.cursor()
