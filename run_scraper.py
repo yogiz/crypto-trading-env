@@ -2,10 +2,10 @@
 
 import scraper
 import time
+from itertools import count
 
-iteration = 0
+iteration = count()
 while True:
-	iteration += 1
 	scraper.run_scraper("crypto.db")
-	print(f"get data ke - {iteration}")
-	time.sleep(60)
+	print(f"get data ke - {next(iteration)}")
+	time.sleep(10)

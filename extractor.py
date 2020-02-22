@@ -9,11 +9,9 @@ Also we transpose the array, so each row have same data type.
 import json
 import numpy as np
 
-def extract_ticker(timecode, tiker_data): 
+def extract_ticker(tiker_data): 
 	t_json = json.loads(tiker_data)
 	t_json = t_json['ticker']
-
-	tmcd = timecode
 
 	high = t_json['high']
 	low = t_json['low']
@@ -24,9 +22,10 @@ def extract_ticker(timecode, tiker_data):
 	sell = t_json['sell']
 	server_time = t_json['server_time']
 
-	return [tmcd,high,low,vol_btc,vol_idr,last,buy,sell,server_time]  # [timecode, ticker data]
 
-def extract_depth(timecode, depth_data): 
+	return   [high,low,vol_btc,vol_idr,last,buy,sell,server_time] # [high,low,vol_btc,vol_idr,last,buy,sell,server_time]
+
+def extract_depth(depth_data): 
 	d_json = json.loads(depth_data)
 	d_buy = d_json['buy']
 	d_sell = d_json['sell']
@@ -36,7 +35,7 @@ def extract_depth(timecode, depth_data):
 	return [buy, sell]   # [ [buy (price, amount)]  --  [sell (price, amount)] ] 
 
 
-def extract_trades(timecode, trades_data): 
+def extract_trades(trades_data): 
 	td_json = json.loads(trades_data)
 	trades = []
 	for i in range(len(td_json)) :

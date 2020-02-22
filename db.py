@@ -60,7 +60,7 @@ def load_data(cols,market,limit,dbname,order='DESC') :
 
     query = f'SELECT * FROM (SELECT {arg_col} FROM btc_idr ORDER BY timecode {order} LIMIT {limit})ORDER BY timecode ASC;'
     
-    con = sql_connect()
+    con = sql_connect(dbname)
     try :
         crs = con.cursor()
         crs.execute(query)
