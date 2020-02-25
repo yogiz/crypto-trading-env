@@ -65,7 +65,7 @@ def run_scraper(dbname):
 	markets = config['market']
 	for market in markets :
 		data = getMarket(market)
-		db.write_to_db(market,data,dbname)
+		db.write_market_todb(market,data,dbname)
 		if not market == markets[-1]: # if not last market apply delay
 			sleep(config['delay-each-market'])
 

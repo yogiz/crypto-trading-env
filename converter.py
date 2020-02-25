@@ -51,7 +51,6 @@ def convert_depth(depth_raw) :
 	return depth
 
 
-
 ''' 
 second convert strategy, 
 take precentation representation of that data from all column that

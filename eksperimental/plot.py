@@ -16,9 +16,9 @@ LIMIT = 50
 
 
 # def animate(i):
-# 	load_data = db.load_data(["ticker","trades","depth"],"btc_idr",LIMIT,"crypto.db")
+# 	load_market_data = db.load_market_data(["ticker","trades","depth"],"btc_idr",LIMIT,"crypto.db")
 # 	ticker_raw = []
-# 	for load  in load_data :
+# 	for load  in load_market_data :
 # 		ticker_raw.append(extract_ticker(load[0],load[1]))
 # 	ticker_converted = convert_ticker(ticker_raw)
 # 	plt.cla()
@@ -56,9 +56,9 @@ def change_state():
     
  
 def data_points():
-	load_data = db.load_data(["ticker"],"btc_idr",LIMIT,"crypto.db")
+	load_market_data = db.load_market_data(["ticker"],"btc_idr",LIMIT,"crypto.db")
 	ticker_raw = []
-	for load  in load_data :
+	for load  in load_market_data :
 		ticker_raw.append(extract_ticker(load[0],load[1]))
 	ticker_converted = convert_ticker(ticker_raw)
 

@@ -16,22 +16,23 @@ def sql_connect(dbname="crypto.db"):
         return con
     except Error:
         print(Error)
- 
-def create_table(con, market):
+
+def create_table(con, table_name, cols):
     crs = con.cursor()
-    crs.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='"+ market+ "'")
+    crs.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='"+ table_name+ "'")
     exist = int(crs.fetchone()[0])
-    # print(market + ' = ' + str(exist))
+    # print(table_name + ' = ' + str(exist))
     if(exist == 0) :
-        crs.execute("CREATE TABLE " + market + "(timecode,ticker,trades,depth)")
+        crs.execute("CREATE TABLE " + table_name + cols )
         con.commit()
         crs.close()
     # else :
     #     print('Database exist!')
 
-def write_to_db(market, data, dbname):
+def write_market_todb(market, data, dbname):
     con = sql_connect(dbname)
-    create_table(con, market)
+    cols = '(timecode,ticker,trades,depth)'
+    create_table(con, market, cols)
     try :
         crs = con.cursor()
         crs.execute('INSERT INTO '+ market +'(timecode,ticker,trades,depth) VALUES (?,?,?,?)', [data[0],json.dumps(data[1]),json.dumps(data[2]),json.dumps(data[3])])
@@ -46,19 +47,19 @@ def write_to_db(market, data, dbname):
             con.close()
 
 
-# def write_to_db(market,data):
+# def write_market_todb(market,data):
 #     con = sql_connect()
 #     insert_data(market,data)
 
 
 
-def load_data(cols,market,limit,dbname,order='DESC') :
+def load_market_data(cols,market,limit,dbname,order='DESC') :
     rows = [];
     arg_col = 'timecode'
     for col in cols :
         arg_col += f',{col}'
 
-    query = f'SELECT * FROM (SELECT {arg_col} FROM btc_idr ORDER BY timecode {order} LIMIT {limit})ORDER BY timecode ASC;'
+    query = f'SELECT * FROM (SELECT {arg_col} FROM {market} ORDER BY timecode {order} LIMIT {limit})ORDER BY timecode ASC;'
     
     con = sql_connect(dbname)
     try :

@@ -12,3 +12,4 @@ delay-each-market: 0  #in seconds
 
 
 limit : 10  # database load limit each time
+min-actionable-amount : 1_000_000 # min amount at the price point

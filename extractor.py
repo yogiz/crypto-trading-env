@@ -52,3 +52,22 @@ def extract_trades(trades_data):
 
 	trades = np.transpose(trades)
 	return trades  # [ [date], [price], [amount], [type (1 = buy, 0 = sell)] ]
+
+def extract_actionable_price(depth_raw, minim) :  # sometime the top sell or buy price only with little amount of coin in that price point. So its need to find the price with minimum amount we set
+	act_price = []
+	for depth in depth_raw:
+		buys = depth[0]
+		sells = depth[1]
+		length = len(depth[0][0])
+		buy = 0
+		sell = 0
+		for i in range(length):
+			buy_value = float(buys[0][i]) * float(buys[1][i])
+			sell_value = float(sells[0][i]) * float(sells[1][i])
+			if buy_value > minim and buy == 0 :
+				buy = buys[0][i]
+			if sell_value > minim and sell == 0 :
+				sell = sells[0][i]
+		act_price.append([buy, sell])
+	act_price = np.transpose(act_price)
+	return act_price
