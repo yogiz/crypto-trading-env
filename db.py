@@ -17,6 +17,11 @@ def sql_connect(dbname="crypto.db"):
     except Error:
         print(Error)
 
+def db_close(con):
+    con.commit()
+    con.close()
+
+
 def create_table(con, table_name, cols):
     crs = con.cursor()
     crs.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='"+ table_name+ "'")
