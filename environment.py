@@ -2,13 +2,11 @@
 """
 This is environmental part. All trades transaction function are defined here.
 
-
 - check balance
 - trade history
 - trade (buy, sell)
 - get Order info
 - cancel order
-
 
 ----------------
 | trades table |
@@ -21,7 +19,8 @@ timecode = unix timestamp
 market = this is market pair (e.i btc_idr, eth_btc)
 type = buy or sell
 price = trade price
-amount = amount to trade
+amount = amount to trade ( In BUY transaction AMOUNT is the amount in currency to buy with (BTC_IDR, amount = IDR amount).
+						   In SELL transaction AMOUNT is the amount of the currency want to sell (BTC_IDR = BTC amount) )
 status = [process, finish]
 
 -----------------
@@ -43,112 +42,137 @@ from db import sql_connect, create_table, db_close
 import time
 
 DBNAME = "profile.db"
-NOW = int(time.time())
-
 TR_TYPE = ['buy', 'sell']
 TR_STATUS = ['process', 'done']
+TR_STAGE = ['buy_process', 'buy_done', 'sell_process', 'sell_done']
+
+TR_FEE = 0.003
 
 # create database
-def init_profile(dbname):
-	con = sql_connect(dbname)
+def init_profile(con):
 	create_table(con,"balance","(id INTEGER PRIMARY KEY, timecode, idr, btc)")
 	create_table(con,"trades","(id INTEGER PRIMARY KEY, trade_id, timecode, market, trans_type, price, amount, fee, status)")
-	create_table(con,"history","(id INTEGER PRIMARY KEY, trade_id, timecode, opentime, closetime, openprice, closeprice, profit)")
+	create_table(con,"history","(id INTEGER PRIMARY KEY, trade_id, timecode, opentime, closetime, openprice, closeprice,openamount, closeamount, profit, percent_profit)")
 
 # balance table
-def init_balance(dbname,idr=1_000_000,btc=0):
-	con = sql_connect(dbname)
-	crs = con.cursor()
-	balance = [NOW,idr,btc]
+def init_balance(crs,idr=1_000_000,btc=0):
+	balance = [int(time.time()),idr,btc]
 	crs.execute('INSERT INTO balance(timecode, idr, btc) VALUES (?,?,?)', balance)
-	db_close(con)
 
-def check_balance(dbname, id=1):
-	con = sql_connect(dbname)
-	crs = con.cursor()
+
+def check_balance(crs, id=1):
 	crs.execute("SELECT * FROM balance WHERE id=?",[id])
 	rows = crs.fetchall()
-	db_close(con)
 	return rows[0]
 
-def update_balance(dbname,col,val,id=1):
-	con = sql_connect(dbname)
-	crs = con.cursor()
-	# query = f"UPDATE balance SET {col} = {val} WHERE id={id}"
+def update_balance(crs,col,val,id=1):
 	crs.execute("UPDATE balance SET ?=? WHERE id=?", [col,val,id])
-	# query = f"UPDATE balance SET timecode = {NOW} WHERE id={id}"
-	crs.execute("UPDATE balance SET timecode=? WHERE id=?", [NOW, id])
-	db_close(con)
-
+	crs.execute("UPDATE balance SET timecode=? WHERE id=?", [int(time.time()), id])
 
 # trades table
+def trade_fee(price, amount, mode = 0): # MODE = 0 is Buy transaction, 1 and other is Sell transaction
+	if mode :
+		return float(price) * float(amount) * TR_FEE
+	else :
+		return float(amount) * TR_FEE
 
 def trade_id(market):
-	return hash(str(NOW) + market)
+	return hash(str(int(time.time())) + market)
 
-def buy_trade(dbname, market, price, amount):
+def buy_trade(crs, market, price, amount): # AMOUNT from the currency to buy with, for ex. BTC_IDR = IDR amount
 	trd_id = trade_id(market)
-
-	con = sql_connect(dbname)
-	crs = con.cursor()
-	trade = [trd_id, NOW, market, TR_TYPE[0], price, amount, TR_STATUS[0]]
-	crs.execute('INSERT INTO trades(trade_id, timecode, market, trans_type, price, amount, status) VALUES (?,?,?,?,?,?,?)', trade)
-	db_close(con)
-
+	fee = trade_fee(price, amount)
+	trade = [trd_id, int(time.time()), market, TR_TYPE[0], price, amount, fee, TR_STATUS[0]]
+	crs.execute('INSERT INTO trades(trade_id, timecode, market, trans_type, price, amount, fee, status) VALUES (?,?,?,?,?,?,?,?)', trade)
 	return trd_id
 
-def tr_status_done(dbname, tr_type, trd_id):
-	con = sql_connect(dbname)
-	crs = con.cursor()
+def tr_status_done(crs, tr_type, trd_id):
 	crs.execute("UPDATE trades SET status=? WHERE trade_id=? AND trans_type=?",[TR_STATUS[1], trd_id, tr_type])
-	db_close(con)
 
-def sell_trade(dbname,trd_id, price):
-	con = sql_connect(dbname)
-	crs = con.cursor()
 
+def sell_trade(crs,trd_id, sell_price):
 	# check if the id exist
-	crs.execute('SELECT id, market, trans_type, amount, status from trades WHERE trade_id=?', [trd_id])
+	crs.execute('SELECT id, market, trans_type, amount, price, status from trades WHERE trade_id=?', [trd_id])
 	fetch = crs.fetchall()
 	market = fetch[0][1]
 	tr_type = fetch[0][2]
-	amount = fetch[0][3]
-	status = fetch[0][4]
+	idr_amount = fetch[0][3]
+	buy_price = fetch[0][4]
+	status = fetch[0][5]
 	if len(fetch) == 1 and tr_type == TR_TYPE[0] and  status == TR_STATUS[1] :
-		trade = [trd_id, NOW, market, TR_TYPE[1], price, amount, TR_STATUS[0]]
-		crs.execute('INSERT INTO trades(trade_id, timecode, market, trans_type, price, amount, status) VALUES (?,?,?,?,?,?,?)', trade)
+		btc_amount = float(idr_amount) / float(buy_price)
+		fee = trade_fee(sell_price, btc_amount, 1)
+		trade = [trd_id, int(time.time()), market, TR_TYPE[1], sell_price, btc_amount, fee, TR_STATUS[0]]
+		crs.execute('INSERT INTO trades(trade_id, timecode, market, trans_type, price, amount, fee, status) VALUES (?,?,?,?,?,?,?,?)', trade)
 	else :
 		print('sell - failed!')
-	db_close(con)
 
-def trade_is_complete(dbname, trd_id):
-	con = sql_connect(dbname)
-	crs = con.cursor()
 
+def trade_is_complete(crs, trd_id):
 	crs.execute('SELECT * from trades WHERE trade_id=?', [trd_id])
 	fetch = crs.fetchall()
+	if len(fetch) == 2:
+		idx = [0,1] if (fetch[0][4] == TR_TYPE[0]) else [1,0]   # idx[0] = index buy, idx[1] = index sell
+		buy = fetch[idx[0]]
+		sell = fetch[idx[1]]
+		if buy[4] == TR_TYPE[0] and sell[4] == TR_TYPE[1] and buy[8] == sell[8] == TR_STATUS[1] :
+			timecode = int(time.time())
+			opentime = buy[2]
+			closetime = sell[2]
+			openprice = buy[5]
+			closeprice = sell[5]
+			openamount = buy[6]
+			closeamount = sell[6]
+			# profit =  ((BTC amount - sell fee) * sell Price ) - (IDR amount - buy fee)
+			profit = ( ( float(closeamount) * float(closeprice) ) - float(sell[7]) ) - ( float(openamount) - float(buy[7]) )
+			percent_profit = (profit / float(openamount)) * 100
+			return [trd_id, timecode, opentime, closetime, openprice, closeprice, openamount, closeamount, profit, percent_profit]
+		else :
+			return 0
+	else :
+		return 0
 
-	idx = [0,1] if (fetch[0][4] == TR_TYPE[0]) else [1,0]   # idx[0] = index buy, idx[1] = index sell
-	# if len(fetch) == 2 and (fetch[idx[0]][4] + fetch[idx[1]][4]) == (TR_TYPE[0] + TR_TYPE[1]) :
-	# 	opentime =
-	# 	closetime =
-	# 	openprice =
-	# 	closeprice =
-	# 	profit =
-
+def delete_trade(crs, trd_id):
+	crs.execute('DELETE FROM trades WHERE trade_id=?', [trd_id])
 
 
 # history database
+def create_history(crs, data):
+	crs.execute("INSERT INTO history(trade_id, timecode, opentime, closetime, openprice, closeprice, openamount, closeamount, profit, percent_profit) VALUES(?,?,?,?,?,?,?,?,?,?)", data)
+
+def check_trade(crs, trd_id):
+	data = trade_is_complete(crs, trd_id)
+	if data :
+		print("trade complete found!")
+		delete_trade(crs, trd_id)
+		print("creating history!")
+		create_history(crs, data)
 
 
 
 
-# init_profile(DBNAME)
-# init_balance(DBNAME)
-# update_balance(DBNAME,'btc',0.01)
+#########
+# Example
+########
 
-# asd = buy_trade(DBNAME, 'btc_idr', '130000000', '0.0001')
-# asd = buy_trade(DBNAME, 'btc_idr', '150000000', '0.0001')
-# tr_status_done(DBNAME, TR_TYPE[1], -909172858584983695)
-# sell_trade(DBNAME, -909172858584983695, '13000000')
-# trade_is_complete(DBNAME, -909172858584983695)
+# db connection
+con = sql_connect(DBNAME)
+crs = con.cursor()
+
+# setup db, load balance
+init_profile(con)
+init_balance(crs)
+
+# buying
+test_buy = buy_trade(crs, 'btc_idr', '124833800', '2000000')
+tr_status_done(crs, TR_TYPE[0], test_buy)
+
+# sell
+sell_trade(crs, test_buy, '144833800')
+tr_status_done(crs, TR_TYPE[1], test_buy)
+
+# move to history table
+check_trade(crs, test_buy)
+
+# close connection
+db_close(con)
